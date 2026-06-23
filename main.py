@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 from fastapi.responses import JSONResponse
+from health_check import run_all_checks
 import sqlite3
 
 app = FastAPI(title="FinTech Nova - Secure API Practice")
@@ -46,3 +47,10 @@ def get_user_secure(username: str):
     cursor.execute(query, (username,))
     result = cursor.fetchall()
     return {"query_ejecutada": query, "resultado": result}
+
+@app.get("/health")
+def health_check_endpoint():
+    result = run_all_checks()
+    if result['status'] == 'unhealthy':
+        raise HTTPException(status_code=503, detail=result)
+    return result
