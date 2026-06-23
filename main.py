@@ -1,45 +1,48 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
+from fastapi import FastAPI, Depends, HTTPException
+from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
+from fastapi.responses import JSONResponse
+import sqlite3
 
-app = FastAPI(
-    title="FinTech Nova - Motor de Riesgo",
-    version="1.0.0"
-)
+app = FastAPI(title="FinTech Nova - Secure API Practice")
 
-class SolicitudCredito(BaseModel):
-    edad: int
-    ingresos: float
-    deudas: float
+@app.middleware("http")
+async def add_security_headers(request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    response.headers["Content-Security-Policy"] = "default-src 'self'"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+    return response
 
-@app.get("/status")
-def get_status():
-    return {
-        "estado": "Operacional",
-        "servidor": "Nodo-01"
-    }
+def get_db():
+    conn = sqlite3.connect(":memory:")
+    cursor = conn.cursor()
+    cursor.execute("CREATE TABLE users (id INTEGER PRIMARY KEY, username TEXT, role TEXT)")
+    cursor.executemany("INSERT INTO users (username, role) VALUES (?, ?)",
+        [("admin", "superadmin"), ("juan", "user"), ("maria", "user")])
+    conn.commit()
+    return conn
 
-@app.post("/evaluar-riesgo")
-def evaluar_riesgo(solicitud: SolicitudCredito):
+@app.get("/vulnerable/users/{username}")
+def get_user_vulnerable(username: str):
+    conn = get_db()
+    cursor = conn.cursor()
+    query = f"SELECT * FROM users WHERE username = '{username}'"
+    try:
+        cursor.execute(query)
+        result = cursor.fetchall()
+        return {"query_ejecutada": query, "resultado": result}
+    except Exception as e:
+        return {"error": str(e)}
 
-    score = solicitud.ingresos - solicitud.deudas
-
-    if solicitud.edad < 18:
-        resultado = "Rechazado (Menor de edad)"
-    elif score > 1000:
-        resultado = "Aprobado"
-    else:
-        resultado = "En Revision"
-
-    return {
-        "resultado": resultado,
-        "score_simulado": score
-    }
-
-@app.get("/datos-financieros/{id_cliente}")
-def obtener_historial(id_cliente: int):
-
-    return {
-        "cliente_id": id_cliente,
-        "historial": "Limpio",
-        "score_interno": 750
-    }
+@app.get("/secure/users/{username}")
+def get_user_secure(username: str):
+    conn = get_db()
+    cursor = conn.cursor()
+    query = "SELECT * FROM users WHERE username = ?"
+    cursor.execute(query, (username,))
+    result = cursor.fetchall()
+    return {"query_ejecutada": query, "resultado": result}
