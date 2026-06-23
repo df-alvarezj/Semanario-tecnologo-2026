@@ -31,8 +31,9 @@ https://curly-capybara-96gxw6rxqjv37j9v-8000.app.github.dev/
 ```bash
 pip install -r requirements.txt
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
 
-# Laboratorio 2 — Estado: COMPLETADO
+## Laboratorio 2 — Estado: COMPLETADO
 
 ### Objetivo
 Hardening de API y prevención de SQL Injection
