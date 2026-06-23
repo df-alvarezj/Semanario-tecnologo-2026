@@ -31,3 +31,20 @@ https://curly-capybara-96gxw6rxqjv37j9v-8000.app.github.dev/
 ```bash
 pip install -r requirements.txt
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+## Laboratorio 2 — Estado: COMPLETADO
+
+### Objetivo
+Hardening de API y prevención de SQL Injection
+
+### Endpoints disponibles
+| Endpoint | Método | Descripción |
+|----------|--------|-------------|
+| /vulnerable/users/{username} | GET | Endpoint vulnerable a SQLi |
+| /secure/users/{username} | GET | Endpoint protegido con prepared statements |
+
+### Hallazgos de seguridad
+- **SQLi demostrado:** payload `juan' OR '1'='1` expuso todos los usuarios incluyendo admin/superadmin
+- **SQLi neutralizado:** el mismo payload en /secure/ devuelve lista vacía
+- **Cabeceras de seguridad:** middleware con 5 cabeceras HTTP configuradas
+- **Verificación:** securityheaders.com calificación C (limitación de Codespaces)
