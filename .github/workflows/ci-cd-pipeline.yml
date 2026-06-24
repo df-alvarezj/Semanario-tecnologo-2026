@@ -1,0 +1,49 @@
+# ┌─────────────────────────────────────────────────────────────┐
+# │  Pipeline CI/CD para FinTech Nova                          │
+# │  Archivo: .github/workflows/ci-cd-pipeline.yml             │
+# │  Lab 4 - Sesión 14: CI/CD y DevSecOps                      │
+# └─────────────────────────────────────────────────────────────┘
+
+name: CI/CD Pipeline - FinTech Nova
+
+# ── DISPARADOR ─────────────────────────────────────────────────
+# El pipeline se activa automáticamente cuando se hace push a main
+on:
+  push:
+    branches:
+      - main
+      - lab4-cicd-devops
+
+# ── JOBS ───────────────────────────────────────────────────────
+jobs:
+  build-and-security:
+    runs-on: ubuntu-latest   # Máquina virtual Ubuntu limpia en cada ejecución
+
+    steps:
+
+      # PASO A: Descargar el código del repositorio a la VM
+      - name: "📥 Descargar código (Checkout)"
+        uses: actions/checkout@v4
+
+      # PASO B: Instalar Python en la versión exacta que usa el proyecto
+      - name: "🐍 Configurar Python 3.11"
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      # PASO C: Instalar todas las dependencias listadas en requirements.txt
+      - name: "📦 Instalar dependencias"
+        run: pip install -r requirements.txt
+
+      # PASO D: Auditoría de seguridad — CORAZÓN del enfoque DevSecOps
+      # Si encuentra vulnerabilidades conocidas, el pipeline SE DETIENE aquí
+      # El código NO avanza. No hay imagen Docker. No hay despliegue.
+      - name: "🔒 Auditoría de Seguridad (pip-audit)"
+        run: |
+          pip install pip-audit
+          pip-audit --requirement requirements.txt
+
+      # PASO E: Solo si todos los pasos anteriores pasaron, construimos la imagen
+      # La etiqueta usa el SHA del commit para trazabilidad exacta de versiones
+      - name: "🐳 Construir imagen Docker"
+        run: docker build -t fintech-nova:${{ github.sha }} .
